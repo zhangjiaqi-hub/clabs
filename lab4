@@ -1,0 +1,169 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+#define MAXOP 100  //操作数或运算符大小
+#define NUMBER '0' //表示找到数的信号
+#define MAXVAL 100 //栈VAL的最大深度
+#define BUFSIZE 100
+
+int sp = 0;
+double val[MAXVAL]; //值栈
+char buf[BUFSIZ];
+int bufp = 0;
+
+int getop(char s[]); //取出栈顶元素
+void push(double f); //入栈
+double pop(void);	//出栈
+int getch(void);
+void ungetch(int c);
+void m(void);
+
+int main()
+{
+	int type;
+	double op2, op1;
+	char s[MAXOP];
+
+	while ((type = getop(s)) != EOF)
+	{				  //检查字符是不是停止符
+		switch (type) //检查字符
+		{
+		case NUMBER:
+			push(atof(s)); //如果返回的是‘0’，将读取的字符转换成浮点数，并压入栈中
+			break;
+
+		case '+':
+			push(pop() + pop());
+			break;
+
+		case '*':
+			push(pop() * pop());
+			break;
+
+		case '-':
+			op2 = pop();
+			push(pop() - op2);
+			break;
+
+		case '/':
+			op2 = pop();
+			if (op2 != 0)
+				push(pop() / op2);
+			else
+				printf("error : zero divisor\n");
+			break;
+
+		case '%':
+			op2 = pop();
+			if (op2 != 0)
+				push((long int)pop() % (long int)op2);
+			else
+				printf("error : zero divisor\n");
+			break;
+
+		case 'a':
+			op1 = pop();
+			printf("\t%.8g\n", op1);
+			push(op1);
+			break;
+
+		case 'b':
+			op1 = pop();
+			push(op1);
+			push(op1);
+			break;
+
+		case 'c':
+			op1 = pop();
+			op2 = pop();
+			push(op1);
+			push(op2);
+			break;
+		case 'd':
+			m();
+			break;
+
+		case '\n':
+			printf("result = %.8g\n", pop());
+			break;
+		default:
+			printf("unknown commond %s\n", s);
+			break;
+		}
+	}
+	return 0;
+}
+
+void push(double f)
+{ //把f下推到值栈中
+	if (sp < MAXVAL)
+		val[sp++] = f; // double val[MAXVAL] 为全局变量；
+	else
+		printf("error : stack full,can not push %g\n", f);
+}
+
+double pop(void)
+{ //弹出并返回栈顶的值
+	if (sp > 0)
+		return val[--sp];
+	else
+		printf("error : stack empty!\n");
+	return 0;
+}
+
+int getop(char s[])
+{ //取下运算符或运算分量
+	int i, c;
+
+	while ((s[0] = c = getch()) == ' ' || c == '\t') //如果读入的是空白符或者制表符，跳过字符
+		;
+	s[1] = '\0'; //将数组作废
+	i = 0;
+	if (!isdigit(c) && c != '.' && c != '-') //如果读入的字符 不是数字或者小数点，返回字符
+		return c;
+	if (c == '-')
+	{
+		if (isdigit(c = getch()) || c == '.')
+		{
+			s[++i] = c;
+		}
+		else
+		{
+			if (c != EOF)
+			{
+				ungetch(c);
+			}
+			return '-';
+		}
+	}
+	if (isdigit(c))
+		while (isdigit(s[++i] = c = getch()))
+			;
+
+	if (c == '.')
+		while (isdigit(s[++i] = c = getch()))
+			;	 //如果读取的是小数点，并且下一个字符是数字是 return '0';
+	s[i] = '\0';  //将数组标\0
+	if (c != EOF) //如果字符不是文件结束符，调用unget(c)函数，将字符存到缓冲区
+		ungetch(c);
+	return NUMBER;
+}
+
+int getch(void)
+{
+	return (bufp > 0) ? buf[--bufp] : getchar(); //如果缓冲数组中无值，即bufp = 0 时，getchar()读入一个字符，否则返回缓冲数组中存储的值。
+}
+
+void ungetch(int c)
+{
+	if (bufp >= BUFSIZ)
+		printf("ungetch : too many characters!\n");
+	else
+		buf[bufp++] = c;
+}
+
+void m(void)
+{
+	sp = 0;
+}
